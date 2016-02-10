@@ -10,9 +10,12 @@
 # new: ${iframe?site=https%3A%2F%2Ffredcommo%2Eshinyapps%2Eio%2FnplrApp%2F&height=2000}
 # https://fredcommo.shinyapps.io/nplrApp/
 
-shinyUI(
-	fluidPage(
+library(shinyjs)
 
+shinyUI(
+  
+	fluidPage(
+	  useShinyjs(),
 ########################################
 # TITLE
 
@@ -57,32 +60,7 @@ shinyUI(
 				),
 			 	align="right"
 			),
-
-			########################################
-			# CHOOSE FILE
-			withTags(
-				div(class="col-sm-12 section-title",
-						h3("Choose a file", em(id="supportedFiles", "(.csv, .tsv, .txt)"))
-					)
-				),
-		    withTags(
-		    	div(
-		    		class="row",
-			    		div(class="col-xs-12 btn-input",
-				            div(class="col-xs-6 checkboxText", "File with headers"),
-				            div(class="col-xs-6", checkboxInput('header', 'yes', TRUE))
-				        	),
-			    		div(class="col-xs-12", id="inputFile",
-				    		fileInput('file1', '',
-				    			accept=c('text/csv',
-				    				'text/tab-separated-values,text/comma-separated-values,text/plain',
-				    				'.csv', '.txt', '.tsv'
-				    				)
-				    			)
-				    	)
-		            )
-		    ),
-
+ 
 			########################################
 			# TRANSFORM
 			withTags(div(class="col-sm-12 section-title", h3("Tranform"))),
@@ -212,26 +190,20 @@ shinyUI(
 					# Plot output
 					h6(verbatimTextOutput("checkFile"),
                         style="visibility: collapse; height: 0px;"),
+          
+					withTags(
+					  div(class='row',
+					      div(class = "col-sm-12", img(id="loader",src='ajax-loader.gif', style='width:128px; height:15px;'))
+					  )
+					),
+ 
 
-                    conditionalPanel(
-                        condition = "output.checkFile == '0'",
-                        	div(class="col-sm-12",
-	                        	uiOutput('message'),
-	                        	imageOutput("welcomeImage")
-                        	)
-                        ),
-
-                    conditionalPanel(
-                        "output.checkFile == '1'",
-                        plotOutput("plot", width = "100%", height = "100%")
-                        )
-
-					# withTags(
-					# 	div(class='row',
-					# 		uiOutput('message'),
-					# 		div(class = "col-sm-12", plotOutput('plot'))
-					# 		)
-					# 	)
+					withTags(
+						div(class='row',
+							uiOutput('message'),
+							div(class = "col-sm-12", plotOutput('plot'))
+							)
+						)
 
 					), # tabpanel Curve
 

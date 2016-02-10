@@ -23,10 +23,10 @@ getTercenData = function(session){
   
   # create a Tercen client object using the token
   client = rtercen::TercenClient$new(authToken=token)
-#   client = rtercen::TercenClient$new(username=getOption('tercen.username'),password=getOption('tercen.password'))
+  #   client = rtercen::TercenClient$new(username=getOption('tercen.username'),password=getOption('tercen.password'))
   # https://tercen.com/core/index.html#ds/6a85a913c87ea0c3f35766d71c15864e/b910f840-aff0-11e5-90e9-a9e3f96ceaa1
-#   workflowId = '6a85a913c87ea0c3f35766d71c15864e'
-#   stepId='a2ca7f10-aff0-11e5-e88f-c9278cc0fb87'
+  #   workflowId = '6a85a913c87ea0c3f35766d71c15864e'
+  #   stepId='b0ce2390-aff0-11e5-9bbd-e98885100510'
   
   # get the cube query defined by your workflow
   query = client$getCubeQuery(workflowId, stepId)
@@ -39,7 +39,7 @@ getTercenData = function(session){
   cube = query$execute()
   
   nMatrixCol=cube$sourceTable$getNMatrixCols()
-    
+  
   ids = cube$sourceTable$getColumn("ids")$getValues()$getData()
   rows = floor(((ids -1) / nMatrixCol)) + 1
   row.df = cube$rowsTable$as.data.frame()
@@ -49,30 +49,23 @@ getTercenData = function(session){
     return(toString(row.df[ri,]))
   })
   
-#   conditions = cube$sourceTable$getColumn("ids")$getValues()$getData()
   x = cube$sourceTable$getColumn(xAxiscolum$name)$getValues()$getData()
   y = cube$sourceTable$getColumn("values")$getValues()$getData()
   
-  dat = data.frame(cell=conditions,conc=x,resp=y,stringsAsFactors=FALSE)
+  dat = data.frame(cell=conditions,conc=x,resp=y)
+   
+  dat <- dat[dat[,2] > 0,]
   
-  dat <- dat[dat[,2]!=0,]
+  dat = split(dat, dat[,1])
   
-  return(split(dat, dat[,1]))
+  return(dat)
 }
 
 shinyServer(function(input, output, session) {
   
-  Input <- reactiveValues(data = matrix(),
-                          cells = character()
+  Input <- reactiveValues(data = NULL,
+                          cells = NULL
   )
-  observe({
-    tercenData = reactive({getTercenData(session)}) 
-    Input$data <- tercenData()
-    Input$cells <- names(tercenData())
-    
-    #       Input$data <- .getData(input$file1$datapath, input$header)
-    #       Input$cells <- names(Input$data)
-  })
   
   test <- reactive({
     if(is.null(Input$data))
@@ -91,67 +84,12 @@ shinyServer(function(input, output, session) {
     models
   })
   
-  
-  exampleInput <- reactive({
-    x <- c("cellLines", rep(c("cell1", "cell2"), each = 3), "...")
-    y <- c("[Conc.]", format(rep(c(1.0, 2.5, 5.0), 2), digits = 2), "...")
-    z <- c(1.021, 0.765, 0.432, 1.087, 0.654, 0.342)
-    z <- c("Responses", round(z, 3), "...")
-    note1 <- "Note: 'Responses' can be raw values, e.g. opt. densities."
-    note2 <- "If so, be sure you check the 'Compute proportions' box."
-    plot.new()
-    legend("top", title = "Expected data format", legend = c(x, y, z), ncol = 3, bty = "n")
-    legend("bottom", legend = c(note1, note2), bty = "n", cex = 1)
-  })
-  
   output$summary <- renderTable({
     models <- test()
     if(is.null(models))
       return(NULL)
     buildSummary(models)
   })
-  
-  output$message <- renderUI({
-    #         if(is.null(input$file1$datapath)){
-    #             return(
-    #                 tags$p("Please, provide a file with cell lines in col1, [conc.] in col2 and responses in col3, as in this ",
-    #                     tags$a(href="https://raw.github.com/fredcommo/nplr/master/inst/extdata/multicell.tsv", download="multicell.tsv", target="_blank", "Example File")
-    # #                    tags$a(href="https://github.com/fredcommo/nplr/blob/master/inst/extdata/multicell.tsv", target="_blank", "Example file")
-    #                     )
-    #                 )
-    #         } else
-    if(is.null(Input$data)){
-      return("This file format is not supported.")
-    } else {
-      nonNum <- sapply(Input$data, function(tmp){ !is.numeric(tmp[,2]) || !is.numeric(tmp[,3]) })
-      if(any(nonNum)){
-        msg <- sprintf("%s may contain non-numeric values", Input$cells[which(nonNum)])
-        return(msg)
-      }
-    }
-    return(NULL)
-  })
-  
-  checkFile <- reactive({
-    #             if(is.null(input$file1$datapath))
-    if(length(Input$data) == 0)
-      return(0)
-    return(1)
-  })
-  
-  welcomeImage <- reactive({
-    return(
-      list(
-        src="images/welcome.png",
-        filetype="image/png",
-        alt="welcome-image"
-      )
-    )
-  })
-  
-  
-  output$checkFile <- renderText({ checkFile() })
-  output$welcomeImage <- renderImage({ welcomeImage() }, deleteFile = FALSE)
   
   output$modelNames <- renderUI({
     models <- test()
@@ -180,11 +118,14 @@ shinyServer(function(input, output, session) {
     unlist(cols)
   })
   
+  tercenData = reactive({
+    getTercenData(session)
+  })
+  
   output$plot <- renderPlot({
-    if(is.null(input$file1$datapath))
-      exampleInput()
-    if(is.null(test()))
-      return(NULL)
+    
+    Input$data <- tercenData()
+    Input$cells <- names(tercenData())
     
     models <- test()
     
@@ -201,6 +142,8 @@ shinyServer(function(input, output, session) {
                 xlab=input$xlabel, ylab=input$ylabel,
                 las = 1
     )
+    
+    hide('loader')
     
   }, res=180, width=1033, height=875)
   
@@ -243,7 +186,6 @@ shinyServer(function(input, output, session) {
     contentType = 'application/pdf'
   )
   
-  
-  session$onSessionEnded(function() { stopApp() })
+  #   session$onSessionEnded(function() { stopApp() })
   
 })
