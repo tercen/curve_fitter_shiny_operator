@@ -23,7 +23,7 @@ getTercenData = function(session){
   
   # create a Tercen client object using the token
   client = rtercen::TercenClient$new(authToken=token)
-#   client = rtercen::TercenClient$new(username='alex',password='xxxx')
+#   client = rtercen::TercenClient$new(username=getOption('tercen.username'),password=getOption('tercen.password'))
   # https://tercen.com/core/index.html#ds/6a85a913c87ea0c3f35766d71c15864e/b910f840-aff0-11e5-90e9-a9e3f96ceaa1
 #   workflowId = '6a85a913c87ea0c3f35766d71c15864e'
 #   stepId='a2ca7f10-aff0-11e5-e88f-c9278cc0fb87'
