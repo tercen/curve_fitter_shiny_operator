@@ -56,8 +56,6 @@ getTercenData = function(session){
   dat = data.frame(cell=conditions,conc=x,resp=y,stringsAsFactors=FALSE)
   
   dat <- dat[dat[,2]!=0,]
-
-print(dat)
   
   return(split(dat, dat[,1]))
 }
