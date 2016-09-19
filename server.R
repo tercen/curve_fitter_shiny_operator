@@ -23,10 +23,10 @@ getTercenData = function(session){
   
   # create a Tercen client object using the token
   client = rtercen::TercenClient$new(authToken=token)
-  #   client = rtercen::TercenClient$new(username=getOption('tercen.username'),password=getOption('tercen.password'))
-  # https://tercen.com/core/index.html#ds/6a85a913c87ea0c3f35766d71c15864e/b910f840-aff0-11e5-90e9-a9e3f96ceaa1
-  #   workflowId = '6a85a913c87ea0c3f35766d71c15864e'
-  #   stepId='b0ce2390-aff0-11e5-9bbd-e98885100510'
+#     client = rtercen::TercenClient$new(username=getOption('tercen.username'),password=getOption('tercen.password'))
+  # https://tercen.com/core/#ds/0496e9537627fbb9538acdfb96209c9b/ae250870-7340-11e6-871d-477da5546461
+#     workflowId = '0496e9537627fbb9538acdfb96209c9b'
+#     stepId='ae250870-7340-11e6-871d-477da5546461'
   
   # get the cube query defined by your workflow
   query = client$getCubeQuery(workflowId, stepId)
@@ -40,7 +40,7 @@ getTercenData = function(session){
   
   nMatrixCol=cube$sourceTable$getNMatrixCols()
   
-  ids = cube$sourceTable$getColumn("ids")$getValues()$getData()
+  ids = cube$sourceTable$getColumn(".ids")$getValues()$getData()
   rows = floor(((ids -1) / nMatrixCol)) + 1
   row.df = cube$rowsTable$as.data.frame()
   row.df = lapply(row.df, as.character)
@@ -49,11 +49,11 @@ getTercenData = function(session){
     return(toString(row.df[ri,]))
   })
   
-  x = cube$sourceTable$getColumn(xAxiscolum$name)$getValues()$getData()
-  y = cube$sourceTable$getColumn("values")$getValues()$getData()
+  x = cube$sourceTable$getColumn(rtercen::removeTablePrefix(xAxiscolum$name))$getValues()$getData()
+  y = cube$sourceTable$getColumn(".values")$getValues()$getData()
   
   dat = data.frame(cell=conditions,conc=x,resp=y)
-   
+  
   dat <- dat[dat[,2] > 0,]
   
   dat = split(dat, dat[,1])
