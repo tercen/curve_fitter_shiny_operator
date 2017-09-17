@@ -18,4 +18,4 @@ shiny::runApp(port=3042, launch.browser = FALSE)
 ```
 
 
-### [Open in browser](https://fredcommo.shinyapps.io/curveFitter/)
+### [Open in browser](https://tercen.com/core/#ivs/a74a73b488ca444e88740b0373d2a228/38b80f00-84b0-11e7-ae40-af4a863db9d4)
