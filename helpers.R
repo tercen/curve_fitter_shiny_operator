@@ -234,7 +234,9 @@ buildSummary <- function(models){
               "nplr version" = sprintf("%s (%s)",nplrv, nplrDate),
               "R version" = gsub("R version ", "", rv)
               )
-    rownames(out) <- sprintf("model-%s", seq_len(length(models)))
+    
+   
+    rownames(out) <- sprintf("model-%s", seq_len(length(rownames(out))))
     out <- as.data.frame(t(out))
     out
 }

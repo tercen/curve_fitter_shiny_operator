@@ -20,27 +20,28 @@ getTercenData = function(session){
   token = query[["token"]]
   workflowId = query[["workflowId"]]
   stepId = query[["stepId"]]
-  
+ 
   # create a Tercen client object using the token
-  client = rtercen::TercenClient$new(authToken=token)
+  client = rtercen::TercenClient$new(username=NULL,password=NULL,authToken=token)
 #     client = rtercen::TercenClient$new(username=getOption('tercen.username'),password=getOption('tercen.password'))
-  # https://tercen.com/core/#ds/0496e9537627fbb9538acdfb96209c9b/ae250870-7340-11e6-871d-477da5546461
+# https://tercen.com/core/#ds/0496e9537627fbb9538acdfb96209c9b/ae250870-7340-11e6-871d-477da5546461
 #     workflowId = '0496e9537627fbb9538acdfb96209c9b'
 #     stepId='ae250870-7340-11e6-871d-477da5546461'
   
   # get the cube query defined by your workflow
   query = client$getCubeQuery(workflowId, stepId)
-  
-  xAxiscolum = query$xaxisColumn
-  if (is.null(xAxiscolum)) stop('A x axis is required')
+   
+  if (length(query$axisQueries) == 0) stop('A x axis is required')
+  xAxiscolum = query$axisQueries[[1]]$xAxisColumn
   # TODO : check the type : must be numeric
   
   # execute the query and get the data
   cube = query$execute()
-  
+ 
   nMatrixCol=cube$sourceTable$getNMatrixCols()
-  
+ 
   ids = cube$sourceTable$getColumn(".ids")$getValues()$getData()
+   
   rows = floor(((ids -1) / nMatrixCol)) + 1
   row.df = cube$rowsTable$as.data.frame()
   row.df = lapply(row.df, as.character)
@@ -48,12 +49,12 @@ getTercenData = function(session){
   conditions = sapply(rows, function(ri){
     return(toString(row.df[ri,]))
   })
-  
-  x = cube$sourceTable$getColumn(rtercen::removeTablePrefix(xAxiscolum$name))$getValues()$getData()
+   
+  x = cube$sourceTable$getColumn('.x')$getValues()$getData()
   y = cube$sourceTable$getColumn(".values")$getValues()$getData()
   
   dat = data.frame(cell=conditions,conc=x,resp=y)
-  
+    
   dat <- dat[dat[,2] > 0,]
   
   dat = split(dat, dat[,1])
