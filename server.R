@@ -42,8 +42,9 @@ getTercenData = function(session){
  
   ids = cube$sourceTable$getColumn(".ids")$getValues()$getData()
    
-  rows = floor(((ids -1) / nMatrixCol)) + 1
+  rows = floor(((ids) / nMatrixCol)) + 1
   row.df = cube$rowsTable$as.data.frame()
+   
   row.df = lapply(row.df, as.character)
   row.df = data.frame(lapply(row.df, as.character), stringsAsFactors=FALSE)
   conditions = sapply(rows, function(ri){
@@ -54,11 +55,11 @@ getTercenData = function(session){
   y = cube$sourceTable$getColumn(".values")$getValues()$getData()
   
   dat = data.frame(cell=conditions,conc=x,resp=y)
-    
+   
   dat <- dat[dat[,2] > 0,]
   
   dat = split(dat, dat[,1])
-  
+   
   return(dat)
 }
 
