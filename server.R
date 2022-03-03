@@ -77,7 +77,12 @@ shinyServer(function(input, output, session) {
       npars <- ifelse(input$npar=="all", "all", as.numeric(input$npar))
       
       #browser()
-      nplr(x, y, npars=npars, useLog=input$toLog, silent = TRUE)
+      if( input$weighting == TRUE ){
+        nplr(x, y, npars=npars, useLog=input$toLog, silent = TRUE,
+             method='gw', LPweight=2)
+      }else{
+        nplr(x, y, npars=npars, useLog=input$toLog, silent = TRUE)
+      }
       #summary(drda(y ~ x, data = tmp, mean_function = "logistic5", is_log=FALSE))
     })
     models

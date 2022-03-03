@@ -91,14 +91,14 @@ shinyUI(
 				    )
 		    ),
 			
-			#withTags(
-			#  div(class="row",
-			#      div(class="col-xs-12 btn-input",
-			#          div(class="col-xs-6 checkboxText", "Weighting"),
-			#          div(class="col-xs-6", checkboxInput('weighting', '1/y**2', FALSE))
-			#      )
-			#  )
-			#),
+			withTags(
+			  div(class="row",
+			      div(class="col-xs-12 btn-input",
+			          div(class="col-xs-6 checkboxText", "Weighting"),
+			          div(class="col-xs-6", checkboxInput('weighting', HTML('<sup>1</sup>&frasl;<sub>y<sup>2</sup></sub>'), FALSE))
+			      )
+			  )
+			),
 
 
 			########################################
