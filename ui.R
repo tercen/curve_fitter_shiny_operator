@@ -76,7 +76,7 @@ shinyUI(
   			  div(class="row",
   			      div(class="col-xs-12 btn-input",
   			          div(class="col-xs-6 checkboxText", "Fitting Library"),
-  			          div(class="col-xs-6", selectInput( 'engine', NULL, c('nplr')  ))
+  			          div(class="col-xs-6", selectInput( 'lib', NULL, c('nplr')  ))
   			      )
   			  )
   			),
@@ -153,8 +153,8 @@ shinyUI(
 		    		div(class="col-sm-12", id="saving-subtitle", h4("Filename (without extension)")),
 		    		div(class="col-sm-12", id="fileName", textInput("fname", '', 'myResults')),
 			    	div(class='col-sm-12',
-			            	div(class='col-sm-6 save-btn', downloadButton("downloadPLot", class="btn-lg btn-success", "Save Plot")),
-			            	div(class='col-sm-6 save-btn', downloadButton("downloadData", class="btn-lg btn-success", "Save Results"))
+			            	div(class='col-sm-6 save-btn', downloadButton("downloadPLot", class="btn-lg btn-success", "Save Plot"))#,
+			            	#div(class='col-sm-6 save-btn', downloadButton("downloadData", class="btn-lg btn-success", "Save Results"))
 			            )
 		    		)
 		    )

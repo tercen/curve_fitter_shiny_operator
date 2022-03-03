@@ -6,7 +6,7 @@
 
 ## REQUIRED
 library(nplr)
-library(XLConnect)
+#library(XLConnect)
 library(shinyjs)
 library(tercen)
 library(dplyr)
@@ -77,13 +77,19 @@ shinyServer(function(input, output, session) {
       npars <- ifelse(input$npar=="all", "all", as.numeric(input$npar))
       
       #browser()
-      if( input$weighting == TRUE ){
-        nplr(x, y, npars=npars, useLog=input$toLog, silent = TRUE,
-             method='gw', LPweight=2)
-      }else{
-        nplr(x, y, npars=npars, useLog=input$toLog, silent = TRUE)
+      if(input$lib == 'nplr'){
+      #if( !is.null( input$engine) && input$engine == 'nplr'){
+      
+        if( input$weighting == TRUE ){
+          nplr(x, y, npars=npars, useLog=input$toLog, silent = TRUE,
+               method='gw', LPweight=2)
+        }else{
+          nplr(x, y, npars=npars, useLog=input$toLog, silent = TRUE)
+        }
+      }else if(input$lib == 'drda'){
+        drda(y ~ x, data = tmp, mean_function = "logistic5", is_log=FALSE)
       }
-      #summary(drda(y ~ x, data = tmp, mean_function = "logistic5", is_log=FALSE))
+
     })
     models
   })
@@ -125,7 +131,6 @@ shinyServer(function(input, output, session) {
   
   tercenData = reactive({
     getData(session)
-    #getTercenData(session)
   })
   
   output$plot <- renderPlot({
@@ -134,6 +139,10 @@ shinyServer(function(input, output, session) {
     Input$cells <- names(tercenData())
     
     models <- test()
+    
+    #if(!is.null( input$lib) &&  input$lib == 'drda'){
+    #  browser()
+    #}
     
     .multiCurve(models,
                 showPoints = input$points,
