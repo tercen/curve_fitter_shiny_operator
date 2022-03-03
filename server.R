@@ -8,60 +8,53 @@
 library(nplr)
 library(XLConnect)
 library(shinyjs)
-library(rtercen)
+library(tercen)
+library(dplyr)
+library(tidyr)
+
+library(drda)
+
 source("helpers.R")
 
 ############################
 
-getTercenData = function(session){
-  # retreive url query parameters provided by tercen
-  query = parseQueryString(session$clientData$url_search)
+
+# http://127.0.0.1:5402/admin/w/b69f8f196272abf4573f6c6948005e09/ds/65fe42d6-50f6-407c-b6c8-b21eec58fa5b
+#options('tercen.workflowId' = 'b69f8f196272abf4573f6c6948005e09')
+#options('tercen.stepId' = '65fe42d6-50f6-407c-b6c8-b21eec58fa5b')
+
+
+getData <- function(session){
+  #browser()
+  ctx <- getCtx(session)
+  cellName <- list( unlist(ctx$rnames) )[[1]]
+  df0 <- ctx$select(c('.x', '.y', '.ri') )
+  df1 <- ctx$rselect(c( cellName ) ) %>%
+    mutate( '.ri' = seq(0, nrow(.)-1)) 
   
-  token = query[["token"]]
-  workflowId = query[["workflowId"]]
-  stepId = query[["stepId"]]
- 
-  # create a Tercen client object using the token
-  client = rtercen::TercenClient$new(username=NULL,password=NULL,authToken=token)
-#     client = rtercen::TercenClient$new(username=getOption('tercen.username'),password=getOption('tercen.password'))
-# https://tercen.com/core/#ds/0496e9537627fbb9538acdfb96209c9b/ae250870-7340-11e6-871d-477da5546461
-#     workflowId = '0496e9537627fbb9538acdfb96209c9b'
-#     stepId='ae250870-7340-11e6-871d-477da5546461'
+  df <- df0 %>%
+    left_join(df1, by='.ri'  )
   
-  # get the cube query defined by your workflow
-  query = client$getCubeQuery(workflowId, stepId)
-   
-  if (length(query$axisQueries) == 0) stop('A x axis is required')
-  xAxiscolum = query$axisQueries[[1]]$xAxisColumn
-  # TODO : check the type : must be numeric
+  dat = data.frame(cell=df[cellName],conc=df['.x'],resp=df['.y'])
   
-  # execute the query and get the data
-  cube = query$execute()
- 
-  nMatrixCol=cube$sourceTable$getNMatrixCols()
- 
-  ids = cube$sourceTable$getColumn(".ids")$getValues()$getData()
-   
-  rows = floor(((ids) / nMatrixCol)) + 1
-  row.df = cube$rowsTable$as.data.frame()
-   
-  row.df = lapply(row.df, as.character)
-  row.df = data.frame(lapply(row.df, as.character), stringsAsFactors=FALSE)
-  conditions = sapply(rows, function(ri){
-    return(toString(row.df[ri,]))
-  })
-   
-  x = cube$sourceTable$getColumn('.x')$getValues()$getData()
-  y = cube$sourceTable$getColumn(".values")$getValues()$getData()
-  
-  dat = data.frame(cell=conditions,conc=x,resp=y)
-   
-  dat <- dat[dat[,2] > 0,]
+  #dat <- dat[dat[,2] > 0,]
   
   dat = split(dat, dat[,1])
-   
+  
   return(dat)
 }
+
+getCtx <- function(session) {
+  # retreive url query parameters provided by tercen
+  query <- parseQueryString(session$clientData$url_search)
+  token <- query[["token"]]
+  taskId <- query[["taskId"]]
+  
+  # create a Tercen context object using the token
+  ctx <- tercenCtx(taskId = taskId, authToken = token)
+  return(ctx)
+}
+
 
 shinyServer(function(input, output, session) {
   
@@ -72,6 +65,7 @@ shinyServer(function(input, output, session) {
   test <- reactive({
     if(is.null(Input$data))
       return(NULL)
+    
     models <- lapply(Input$data, function(tmp){
       x <- tmp[,2]
       y <- tmp[,3]
@@ -81,13 +75,17 @@ shinyServer(function(input, output, session) {
         y <- convertToProp(y, T0 = NULL, Ctrl = NULL)
       }
       npars <- ifelse(input$npar=="all", "all", as.numeric(input$npar))
+      
+      #browser()
       nplr(x, y, npars=npars, useLog=input$toLog, silent = TRUE)
+      #summary(drda(y ~ x, data = tmp, mean_function = "logistic5", is_log=FALSE))
     })
     models
   })
   
   output$summary <- renderTable({
     models <- test()
+    
     if(is.null(models))
       return(NULL)
     buildSummary(models)
@@ -121,7 +119,8 @@ shinyServer(function(input, output, session) {
   })
   
   tercenData = reactive({
-    getTercenData(session)
+    getData(session)
+    #getTercenData(session)
   })
   
   output$plot <- renderPlot({

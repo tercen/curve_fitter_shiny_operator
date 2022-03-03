@@ -11,6 +11,7 @@
 # https://fredcommo.shinyapps.io/nplrApp/
 
 library(shinyjs)
+library(colourpicker)
 
 shinyUI(
   
@@ -50,16 +51,7 @@ shinyUI(
 			# LOAD CSS FILE
     		includeCSS("nplr.css"),
    
-			########################################
-			# LINK TO NPLR
-   			h5(
-				em(
-					a("...using R package 'nplr'",
-						href="http://cran.r-project.org/web/packages/nplr/index.html",
-						target="_blank")
-				),
-			 	align="right"
-			),
+
  
 			########################################
 			# TRANSFORM
@@ -80,16 +72,33 @@ shinyUI(
 		            )
 		    	)
 		    ),
+  			withTags(
+  			  div(class="row",
+  			      div(class="col-xs-12 btn-input",
+  			          div(class="col-xs-6 checkboxText", "Fitting Library"),
+  			          div(class="col-xs-6", selectInput( 'engine', NULL, c('nplr')  ))
+  			      )
+  			  )
+  			),
 
 			########################################
 			# ANALYSE
-			withTags(div(class="col-sm-12 section-title", h3("Analyse"))),
+			withTags(div(class="col-sm-12 section-title", h3("Analysis"))),
 		    withTags(
 		    	div(class="col-sm-12 btn-input",
 					    h4("Number of parameters"),
-					    radioButtons('npar', '', c("best"='all', "2"='2', "3"='3', "4"='4', "5"='5'), "all")
+					    radioButtons('npar', '', c("best"='all', "2"='2', "3"='3', "4"='4', "5"='5'), "all"),
 				    )
 		    ),
+			
+			#withTags(
+			#  div(class="row",
+			#      div(class="col-xs-12 btn-input",
+			#          div(class="col-xs-6 checkboxText", "Weighting"),
+			#          div(class="col-xs-6", checkboxInput('weighting', '1/y**2', FALSE))
+			#      )
+			#  )
+			#),
 
 
 			########################################

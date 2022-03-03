@@ -194,49 +194,75 @@
 ############################
 # HELPERS SUMMARY TABLE
 ############################
-buildSummary <- function(models){
-    pars <- lapply(models, function(model){
-            p <- getPar(model)
-            p <- unlist(p)
-            p[-1] <- format(p[-1], digits = 3, scientific = TRUE)
-            p
-        })
-    gof <- lapply(models, function(model) format(getGoodness(model), digits = 3, scientific = TRUE) )
-    auc <- lapply(models, function(model) signif(getAUC(model), 3) )
-    inflpt <- lapply(models, function(model){
-            infl <- as.numeric(getInflexion(model))
-            cbind.data.frame(
-                xInfl = format(infl[1], digits = 3),
-                yInfl = format(infl[2], digits = 3)
-                )
-        })
-    ic50 <- lapply(models, function(model){
-            estim <- getEstimates(model, .5)
-            interv <- sprintf("[%s | %s]",
-                format(estim$x.025, digits=3, scientific = TRUE),
-                format(estim$x.975, digits=3, scientific = TRUE)
-                )
-            cbind(resp = format(estim$y, digits = 2),
-                IC = format(estim$x, digits = 3, scientific = TRUE),
-                "[95%]" = interv)
-        })
-    nplrv <- as.character(packageVersion("nplr"))
-    nplrDate <- as.character(packageDescription("nplr")["Date"])
-    rv <- as.character(version["version.string"])
+buildDrdaSummary <- function(models){
+  
+}
 
-    out <- cbind.data.frame(cellLine = names(models),
-              do.call(rbind, pars),
-              GOF = do.call(c, gof),
-              do.call(rbind, auc),
-              do.call(rbind, inflpt),
-              do.call(rbind, ic50),
-              "date (Y-m-d)" = format(Sys.Date(), "%Y-%m-%d"),
-              "nplr version" = sprintf("%s (%s)",nplrv, nplrDate),
-              "R version" = gsub("R version ", "", rv)
-              )
-    
-   
-    rownames(out) <- sprintf("model-%s", seq_len(length(rownames(out))))
-    out <- as.data.frame(t(out))
-    out
+
+buildNplrSummary <- function(models){
+  pars <- lapply(models, function(model){
+    p <- getPar(model)
+    p <- unlist(p)
+    p[-1] <- format(p[-1], digits = 3, scientific = TRUE)
+    p
+  })
+  gof <- lapply(models, function(model) format(getGoodness(model), digits = 3, scientific = TRUE) )
+  auc <- lapply(models, function(model) signif(getAUC(model), 3) )
+  inflpt <- lapply(models, function(model){
+    infl <- as.numeric(getInflexion(model))
+    cbind.data.frame(
+      xInfl = format(infl[1], digits = 3),
+      yInfl = format(infl[2], digits = 3)
+    )
+  })
+  ic50 <- lapply(models, function(model){
+    estim <- getEstimates(model, .5)
+    interv <- sprintf("[%s | %s]",
+                      format(estim$x.025, digits=3, scientific = TRUE),
+                      format(estim$x.975, digits=3, scientific = TRUE)
+    )
+    cbind(resp = format(estim$y, digits = 2),
+          IC = format(estim$x, digits = 3, scientific = TRUE),
+          "[95%]" = interv)
+  })
+  nplrv <- as.character(packageVersion("nplr"))
+  nplrDate <- as.character(packageDescription("nplr")["Date"])
+  rv <- as.character(version["version.string"])
+  
+  
+  parsDf <- t(data.frame(pars)) 
+  rownames(parsDf) <- NULL
+  
+  gofDf <- t(data.frame(gof)) 
+  rownames(gofDf) <- NULL
+  
+  aucDf <- do.call(rbind, auc)
+  rownames(aucDf) <- NULL
+  
+  inflptDf <- do.call(rbind, inflpt)
+  rownames(inflptDf) <- NULL
+  
+  ic50Df <- do.call(rbind, ic50)
+  rownames(ic50Df) <- NULL
+  
+  out <- data.frame( cellLine = names(models) ) %>%
+    cbind( parsDf  ) %>%
+    cbind( gofDf  )  %>%
+    cbind( aucDf )   %>%
+    cbind( inflptDf )   %>%
+    cbind( ic50Df )   %>%
+    cbind( data.frame( "date (Y-m-d)" = format(Sys.Date(), "%Y-%m-%d") ) ) %>%
+    cbind( data.frame( "nplr version" = sprintf("%s (%s)",nplrv, nplrDate) ) ) %>%
+    cbind( data.frame( "R version" = gsub("R version ", "", rv) ) ) 
+  
+  rownames(out) <- sprintf("model-%s", seq_len(length(rownames(out))))
+  out <- as.data.frame(t(out))
+  out
+}
+
+
+buildSummary <- function(models, lib = 'nplr'){
+  buildNplrSummary(models)
+  
+
 }
