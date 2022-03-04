@@ -2,6 +2,64 @@
 ############################
 # HELPERS
 ############################
+as.drda.obj <- function(m_, tmp, isLog = FALSE, cell='CELL'){
+  coeff <- unlist( m_$coefficients, use.names = FALSE)
+  
+  interpVals <- approx(tmp$lx, tmp$.y,  n = length(tmp$lx) * 50, t='mean')
+  
+  xCurve <- (interpVals$x)
+  
+  
+
+  if(m_$mean_function == 'logistic2'){
+    yCurve <- 1 / (1 +  exp(-coeff['eta'] * (xCurve - coeff['phi']) ))
+  }
+  
+  if(m_$mean_function == 'logistic4'){
+    yCurve <- coeff['alpha'] + (coeff['beta'] -coeff['alpha']  ) / 
+      (1 +  exp(-coeff['eta'] * (xCurve - coeff['phi']) ))
+  }
+  
+  if(m_$mean_function == 'logistic5'){
+    yCurve <- coeff['alpha'] + (coeff['beta'] -coeff['alpha']  ) / 
+      (1 + coeff['nu'] * exp(-coeff['eta'] * (xCurve - coeff['phi']) ))^(1 / coeff['nu'])  
+  }
+  
+  if(m_$mean_function == 'gompertz'){
+    yCurve <- coeff['alpha'] + (coeff['beta'] -coeff['alpha']  ) *
+       exp(-exp(-coeff['eta'] * (xCurve - coeff['phi']) ) )
+  }
+  
+  
+  idx <- which.min(diff(yCurve))+1
+  inflPoint <- list('x'= xCurve[idx], 'y'= yCurve[idx])
+  
+  
+  infl <- c(FALSE, diff(diff(yCurve)>0)!=0)
+  
+  drdaList <- list( 
+    y = m_$model$.y, 
+    x = m_$model$lx,
+    yFit = m_$fitted.values, 
+    w = m_$weights,
+    loglikelihood = m_$loglik,
+    coeff = m_$coefficients,
+    aic = AIC(m_),
+    bic = BIC(m_),
+    n = m_$n,
+    converged = m_$converged,
+    auc = nauc(m_, c(-100,100), c(0,1)),
+    xCurve=xCurve,
+    yCurve=yCurve,
+    inflPoint=inflPoint,
+    cellName=cell
+  )
+  
+  class(drdaList) <- "drdaObject"
+  return(drdaList)
+}
+
+
 .getData <- function(filepath, h){
   if (is.null(filepath))
     return(NULL)
@@ -73,15 +131,28 @@
 #     legend(ifelse(newy[length(newy)]<newy[1], 'topright', 'bottomright'),
 #            legend = paste('Goodness of fit:', gof), bty = 'n', cex = 1)
 # }
-.addPoints <- function(object, pcol, pSize, ...){
+.addPoints <- function(object, pcol, pSize, lib='nplr', ...){
+  if(lib=='nplr'){
     x <- getX(object)
     y <- getY(object)
+    
+  }else{
+    x <- .getXDrda( object, use.names=FALSE )
+    y <- .getYDrda( object, use.names=FALSE )
+  }
+    
     points(x, y, col = pcol, pch = 19, cex = 3*pSize)
 #    points(x, y, pch = 1)
 }
-.addCurve <- function(object, lcol, lWidth, ...){
-    x <- getXcurve(object)
-    y <- getYcurve(object)
+.addCurve <- function(object, lcol, lWidth, lib='nplr',...){
+    if(lib == 'nplr'){
+      x <- getXcurve(object)
+      y <- getYcurve(object)
+      
+    }else{
+      x <- .getXCurveDrda( object, use.names=FALSE )
+      y <- .getYCurveDrda( object, use.names=FALSE )
+    }
     lines(y ~ x, col=lcol, lwd=6*lWidth, ...)
 }
 .SE <- function(x, y){
@@ -91,15 +162,28 @@
     sEr <- as.vector(er/sqrt(n))
     sEr    
 }
-.addMeans <- function(object, pSize, ...){
-    x <- getX(object)
-    y <- getY(object)
+.addMeans <- function(object, pSize, lib='nplr',...){
+    if(lib=='nplr'){
+      x <- getX(object)
+      y <- getY(object)
+      
+    }else{
+      x <- .getXDrda( object, use.names=FALSE )
+      y <- .getYDrda( object, use.names=FALSE )
+    }
+    
     my <- as.vector(by(y, x, mean, na.rm = TRUE))
     points(unique(x), my, pch = 19, cex = 3*pSize, ...)
 }
-.addErr <- function(object, pSize, ...){
+.addErr <- function(object, pSize, lib='nplr',...){
+  if(lib=='nplr'){
     x <- getX(object)
     y <- getY(object)
+    
+  }else{
+    x <- .getXDrda( object, use.names=FALSE )
+    y <- .getYDrda( object, use.names=FALSE )
+  }
     my <- as.vector(by(y, x, mean, na.rm = TRUE))
     sEr <- .SE(x, y)
     e <- diff(range(x, na.rm = TRUE))/60
@@ -122,14 +206,40 @@
     axis(2, at = y, labels = format(y, digits = 2), cex.axis = .85, las = 1)
 }
 
-.multiCurve <- function(models, showPoints = FALSE, showMeans = FALSE, showSDerr = TRUE, pSize = 1, lWidth=1, legendSize=1, showAsLog = TRUE, Legend = TRUE, Cols = NULL,...){
+.getXDrda <- function(mdl, use.names = TRUE){
+  return( unlist(setNames(as.list(mdl$x), unlist(lapply( 1:length(mdl$x), function(i) paste0(mdl$cellName, i) ))), use.names = use.names) )
+}
+
+.getYDrda <- function(mdl, use.names = TRUE){
+  return( unlist(setNames(as.list(mdl$y), unlist(lapply( 1:length(mdl$y), function(i) paste0(mdl$cellName, i) ))), use.names = use.names) )
+  
+}
+
+.getXCurveDrda <- function(mdl, use.names = TRUE){
+  return( unlist(setNames(as.list(mdl$xCurve), unlist(lapply( 1:length(mdl$xCurve), function(i) paste0(mdl$cellName, i) ))), use.names = use.names) )
+}
+
+.getYCurveDrda <- function(mdl, use.names = TRUE){
+  return( unlist(setNames(as.list(mdl$yCurve), unlist(lapply( 1:length(mdl$yCurve), function(i) paste0(mdl$cellName, i) ))), use.names = use.names) )
+  
+}
+
+.multiCurve <- function(models, showPoints = FALSE, showMeans = FALSE, showSDerr = TRUE, pSize = 1, lWidth=1, legendSize=1, showAsLog = TRUE, Legend = TRUE, Cols = NULL, used_lib = 'nplr',...){
 
 
     showAsLog <- ifelse(showAsLog == "TRUE", TRUE, FALSE)
     K <- length(models)
-        
-    allX <- do.call(c, lapply(models, function(tmp) getX(tmp) ))
-    allY <- do.call(c, lapply(models, function(tmp) getY(tmp) ))
+    if(used_lib == 'drda')
+    {
+
+      allX <- do.call(c, lapply(models, function(tmp) .getXDrda(tmp) ))
+      allY <- do.call(c, lapply(models, function(tmp) .getYDrda(tmp) ))
+    }else{
+      allX <- do.call(c, lapply(models, function(tmp) getX(tmp) ))
+      allY <- do.call(c, lapply(models, function(tmp) getY(tmp) ))
+    }
+    
+
     plot(range(allX, na.rm = TRUE), range(min(allY, na.rm = TRUE), max(allY, na.rm = TRUE)+.3),
          type = "n", bty = "n", axes = FALSE, cex.axis = .95,
          ylim = range(min(min(allY, na.rm = TRUE), 0), max(max(allY, na.rm = TRUE), 1.25)+.2), ...)
@@ -143,10 +253,10 @@
     for(k in seq_len(K)){
         tmp <- models[[k]]
         Col <- Cols[k]
-        if(showPoints) .addPoints(tmp, pSize = pSize, pcol = Col, ...)
-        if(showMeans) .addMeans(tmp, pSize = pSize, col = Col, ...)
-        if(showSDerr) .addErr(tmp, pSize, col = Col, ...)
-        .addCurve(tmp, Col, lWidth)
+        if(showPoints) .addPoints(tmp, pSize = pSize, pcol = Col, lib=used_lib, ...)
+        if(showMeans) .addMeans(tmp, pSize = pSize, col = Col, lib=used_lib, ...)
+        if(showSDerr) .addErr(tmp, pSize, col = Col, lib=used_lib, ...)
+        .addCurve(tmp, Col, lWidth, lib=used_lib)
     }
 
     if(min(allY, na.rm = TRUE) < 0)

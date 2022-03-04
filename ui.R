@@ -76,29 +76,52 @@ shinyUI(
   			  div(class="row",
   			      div(class="col-xs-12 btn-input",
   			          div(class="col-xs-6 checkboxText", "Fitting Library"),
-  			          div(class="col-xs-6", selectInput( 'lib', NULL, c('nplr')  ))
+  			          div(class="col-xs-6", selectInput( 'lib', NULL, c('nplr', 'drda')  ))
   			      )
   			  )
   			),
 
 			########################################
 			# ANALYSE
-			withTags(div(class="col-sm-12 section-title", h3("Analysis"))),
-		    withTags(
-		    	div(class="col-sm-12 btn-input",
-					    h4("Number of parameters"),
-					    radioButtons('npar', '', c("best"='all', "2"='2', "3"='3', "4"='4', "5"='5'), "all"),
-				    )
-		    ),
-			
-			withTags(
-			  div(class="row",
-			      div(class="col-xs-12 btn-input",
-			          div(class="col-xs-6 checkboxText", "Weighting"),
-			          div(class="col-xs-6", checkboxInput('weighting', HTML('<sup>1</sup>&frasl;<sub>y<sup>2</sup></sub>'), FALSE))
-			      )
-			  )
+			conditionalPanel(
+			  condition = "input.lib == 'nplr'",
+			  withTags(div(class="col-sm-12 section-title", h3("Analysis"))),
+			  withTags(
+			    div(class="col-sm-12 btn-input",
+			        h4("Number of parameters"),
+			        radioButtons('npar', '', c("best"='all', "2"='2', "3"='3', "4"='4', "5"='5'), "all"),
+			    )
+			  ),
+			  withTags(
+			    div(class="row",
+			        div(class="col-xs-12 btn-input",
+			            div(class="col-xs-6 checkboxText", "Weighting"),
+			            div(class="col-xs-6", checkboxInput('weighting', HTML('<sup>1</sup>&frasl;<sub>yfit<sup>2</sup></sub>'), FALSE))
+			        )
+			    )
+			  ),
 			),
+			
+			conditionalPanel(
+			  condition = "input.lib == 'drda'",
+			  withTags(div(class="col-sm-12 section-title", h3("Analysis"))),
+			  withTags(
+			    div(class="col-sm-12 btn-input",
+			        h4("Number of parameters"),
+			        radioButtons('npard', '', c("2"='logistic2', "4"='logistic4',"5"='logistic5',"Gompertz"='gompertz'), "logistic5"),
+			    )
+			  ),
+			  withTags(
+			    div(class="row",
+			        div(class="col-xs-12 btn-input",
+			            div(class="col-xs-6 checkboxText", "Weighting"),
+			            div(class="col-xs-6", checkboxInput('weightingd', HTML('<sup>1</sup>&frasl;<sub>y<sup>2</sup></sub>'), FALSE))
+			        )
+			    )
+			  ),
+			),
+			
+
 
 
 			########################################

@@ -20,8 +20,8 @@ source("helpers.R")
 
 
 # http://127.0.0.1:5402/admin/w/b69f8f196272abf4573f6c6948005e09/ds/65fe42d6-50f6-407c-b6c8-b21eec58fa5b
-#options('tercen.workflowId' = 'b69f8f196272abf4573f6c6948005e09')
-#options('tercen.stepId' = '65fe42d6-50f6-407c-b6c8-b21eec58fa5b')
+# options('tercen.workflowId' = 'b69f8f196272abf4573f6c6948005e09')
+# options('tercen.stepId' = '65fe42d6-50f6-407c-b6c8-b21eec58fa5b')
 
 
 getData <- function(session){
@@ -74,24 +74,43 @@ shinyServer(function(input, output, session) {
       if(input$props){
         y <- convertToProp(y, T0 = NULL, Ctrl = NULL)
       }
+      
       npars <- ifelse(input$npar=="all", "all", as.numeric(input$npar))
       
       #browser()
       if(input$lib == 'nplr'){
-      #if( !is.null( input$engine) && input$engine == 'nplr'){
-      
         if( input$weighting == TRUE ){
-          nplr(x, y, npars=npars, useLog=input$toLog, silent = TRUE,
-               method='gw', LPweight=2)
+          mdl <- nplr(x, y, npars=npars, useLog=input$toLog, silent = TRUE,
+               method='res', LPweight=2)
         }else{
-          nplr(x, y, npars=npars, useLog=input$toLog, silent = TRUE)
+          mdl <- nplr(x, y, npars=npars, useLog=input$toLog, silent = TRUE)
+          
         }
       }else if(input$lib == 'drda'){
-        drda(y ~ x, data = tmp, mean_function = "logistic5", is_log=FALSE)
+        
+        isLog <- !input$toLog
+        tmp$lx <- tmp$.x
+        if( !isLog ){
+          tmp$lx <- log10(tmp$lx)
+        }
+        
+        w <- tmp$lx *0 + 1
+        if(input$weightingd == TRUE){
+          w <- 1 / ( (tmp$.y)**2  )
+        }
+        
+        cellName <- tmp$cell[[1]]
+        return(as.drda.obj(drda(.y ~ lx, data = tmp, 
+                                mean_function = input$npard,
+                                weights = w,
+                                is_log=TRUE), tmp, isLog = TRUE, cell=cellName))
+        
+        
       }
-
+      return(mdl)
     })
-    models
+    
+    return(models)
   })
   
   output$summary <- renderTable({
@@ -140,9 +159,7 @@ shinyServer(function(input, output, session) {
     
     models <- test()
     
-    #if(!is.null( input$lib) &&  input$lib == 'drda'){
-    #  browser()
-    #}
+    
     
     .multiCurve(models,
                 showPoints = input$points,
@@ -155,7 +172,8 @@ shinyServer(function(input, output, session) {
                 Legend = input$showLegend,
                 Cols = getColors(),
                 xlab=input$xlabel, ylab=input$ylabel,
-                las = 1
+                las = 1,
+                used_lib = input$lib
     )
     
     hide('loader')
