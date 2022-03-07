@@ -19,15 +19,16 @@ source("helpers.R")
 ############################
 
 
-# http://127.0.0.1:5402/admin/w/b69f8f196272abf4573f6c6948005e09/ds/65fe42d6-50f6-407c-b6c8-b21eec58fa5b
-# options('tercen.workflowId' = 'b69f8f196272abf4573f6c6948005e09')
-# options('tercen.stepId' = '65fe42d6-50f6-407c-b6c8-b21eec58fa5b')
+# http://127.0.0.1:5402/admin/w/22ae949dc1a3dd3daf96768225009600/ds/d72f5099-6ecf-4944-8f33-99d0ef0e8909
+# options('tercen.workflowId' = '22ae949dc1a3dd3daf96768225009600')
+#options('tercen.stepId' = 'd72f5099-6ecf-4944-8f33-99d0ef0e8909')
 
 
 getData <- function(session){
   #browser()
   ctx <- getCtx(session)
   cellName <- list( unlist(ctx$rnames) )[[1]]
+  
   df0 <- ctx$select(c('.x', '.y', '.ri') )
   df1 <- ctx$rselect(c( cellName ) ) %>%
     mutate( '.ri' = seq(0, nrow(.)-1)) 
@@ -69,6 +70,8 @@ shinyServer(function(input, output, session) {
     models <- lapply(Input$data, function(tmp){
       x <- tmp[,2]
       y <- tmp[,3]
+      
+      yOrig <- y
       if(!is.numeric(x) || !is.numeric(y))
         return(NULL)
       if(input$props){
@@ -77,33 +80,36 @@ shinyServer(function(input, output, session) {
       
       npars <- ifelse(input$npar=="all", "all", as.numeric(input$npar))
       
-      #browser()
+      
       if(input$lib == 'nplr'){
         if( input$weighting == TRUE ){
           mdl <- nplr(x, y, npars=npars, useLog=input$toLog, silent = TRUE,
-               method='res', LPweight=2)
+               method='gw', LPweight=2)
         }else{
           mdl <- nplr(x, y, npars=npars, useLog=input$toLog, silent = TRUE)
           
         }
       }else if(input$lib == 'drda'){
         
-        isLog <- !input$toLog
-        tmp$lx <- tmp$.x
-        if( !isLog ){
-          tmp$lx <- log10(tmp$lx)
-        }
+        #isLog <- !input$toLog
+        #tmp$lx <- tmp$.x
+        #if( !isLog ){
+        #  tmp$lx <- log10(tmp$lx)
+        #}
         
-        w <- tmp$lx *0 + 1
+        w <- x *0 + 1
         if(input$weightingd == TRUE){
-          w <- 1 / ( (tmp$.y)**2  )
+          w <- 1 / ( (yOrig)**2  )
+
         }
         
         cellName <- tmp$cell[[1]]
-        return(as.drda.obj(drda(.y ~ lx, data = tmp, 
+        return(as.drda.obj(drda(y ~ x, data = tmp, 
                                 mean_function = input$npard,
                                 weights = w,
-                                is_log=TRUE), tmp, isLog = TRUE, cell=cellName))
+                                is_log=TRUE), 
+                           mfunc = input$npard,
+                           tmp, isLog = TRUE, cell=cellName))
         
         
       }
@@ -118,7 +124,7 @@ shinyServer(function(input, output, session) {
     
     if(is.null(models))
       return(NULL)
-    buildSummary(models)
+    buildSummary(models, lib = input$lib)
   })
   
   output$modelNames <- renderUI({

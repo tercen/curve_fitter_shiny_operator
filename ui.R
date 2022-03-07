@@ -60,7 +60,7 @@ shinyUI(
 		    	div(class="row",
 			    	div(class="col-xs-12 btn-input",
 				            div(class="col-xs-6 checkboxText", "Convert Log10[conc.]"),
-				            div(class="col-xs-6", checkboxInput('toLog', 'yes', TRUE))
+				            div(class="col-xs-6", checkboxInput('toLog', 'yes', FALSE))
 			            )
 		    	)
 		    ),
@@ -68,7 +68,7 @@ shinyUI(
 		    	div(class="row",
 		    		div(class="col-xs-12 btn-input",
 			            div(class="col-xs-6 checkboxText", "Compute props"),
-			            div(class="col-xs-6", checkboxInput('props', 'yes', FALSE))
+			            div(class="col-xs-6", checkboxInput('props', 'yes', TRUE))
 		            )
 		    	)
 		    ),

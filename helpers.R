@@ -2,10 +2,13 @@
 ############################
 # HELPERS
 ############################
-as.drda.obj <- function(m_, tmp, isLog = FALSE, cell='CELL'){
+as.drda.obj <- function(m_, tmp, isLog = FALSE, mfunc='NA', cell='CELL'){
   coeff <- unlist( m_$coefficients, use.names = FALSE)
   
-  interpVals <- approx(tmp$lx, tmp$.y,  n = length(tmp$lx) * 50, t='mean')
+  x <- m_$model$x
+  y <- m_$model$y
+  
+  interpVals <- approx(x, y,  n = length(x) * 50, t='mean')
   
   xCurve <- (interpVals$x)
   
@@ -31,27 +34,49 @@ as.drda.obj <- function(m_, tmp, isLog = FALSE, cell='CELL'){
   }
   
   
+  # Calculate IC50 & EC50
+
+  
   idx <- which.min(diff(yCurve))+1
   inflPoint <- list('x'= xCurve[idx], 'y'= yCurve[idx])
   
   
   infl <- c(FALSE, diff(diff(yCurve)>0)!=0)
   
+  # IC50 - an estimate of the dose required to produce 50% of the maximal result
+  ic50 <- list( 'x'=xCurve[ which.max( yCurve / max(yCurve) <= 0.5 ) ],
+                'y'=yCurve[ which.max( yCurve / max(yCurve) <= 0.5 ) ] 
+  )
+  
+  
+  #ic50 <- lapply(models, function(model){
+  #  estim <- getEstimates(model, .5)
+  #  interv <- sprintf("[%s | %s]",
+  #                    format(estim$x.025, digits=3, scientific = TRUE),
+  #                    format(estim$x.975, digits=3, scientific = TRUE)
+  #  )
+  #  cbind(resp = format(estim$y, digits = 2),
+  #        IC = format(estim$x, digits = 3, scientific = TRUE),
+  #        "[95%]" = interv)
+  #})
+  #browser()
   drdaList <- list( 
-    y = m_$model$.y, 
-    x = m_$model$lx,
+    y = m_$model$y, 
+    x = m_$model$x,
     yFit = m_$fitted.values, 
     w = m_$weights,
     loglikelihood = m_$loglik,
     coeff = m_$coefficients,
     aic = AIC(m_),
     bic = BIC(m_),
+    npar=mfunc,
     n = m_$n,
     converged = m_$converged,
-    auc = nauc(m_, c(-100,100), c(0,1)),
+    #auc = nauc(m_),
     xCurve=xCurve,
     yCurve=yCurve,
     inflPoint=inflPoint,
+    ic50=ic50,
     cellName=cell
   )
   
@@ -305,7 +330,49 @@ as.drda.obj <- function(m_, tmp, isLog = FALSE, cell='CELL'){
 # HELPERS SUMMARY TABLE
 ############################
 buildDrdaSummary <- function(models){
+  #drdaList <- list( 
+  #  y = m_$model$.y, 
+  #  x = m_$model$lx,
+  #  yFit = m_$fitted.values, 
+  #  w = m_$weights,
+  #  loglikelihood = m_$loglik,
+  #  coeff = m_$coefficients,
+  # aic = AIC(m_),
+  #  bic = BIC(m_),
+  #  n = m_$n,
+  #  converged = m_$converged,
+  #  auc = nauc(m_, c(-100,100), c(0,1)),
+  #  xCurve=xCurve,
+  #  yCurve=yCurve,
+  #  inflPoint=inflPoint,
+  #  cellName=cell
+  #)
   
+  cellLine <- names(models)
+  drdav <- as.character(packageVersion("drda"))
+  drdaDate <- as.character(packageDescription("drda")["Built"])
+  drdaDate <- strsplit( drdaDate, ';' )[[1]][[3]]
+  rv <- as.character(version["version.string"])
+
+  out <- cbind(
+    cellLine,
+    "Mean Function"=lapply(models, function(tmp) tmp$npar ) ,
+    "LogLikelihood"=lapply(models, function(tmp) format(tmp$loglikelihood, digits=3 ) ), 
+    "AIC"=lapply(models, function(tmp) format(tmp$aic, digits=3 ) ),
+    "BIC"=lapply(models, function(tmp) format(tmp$bic, digits=3 ) ) ,
+    "AUC"=lapply(models, function(tmp) format(tmp$auc, digits=3 ) ),
+    "Inflection X"=lapply(models, function(tmp) format(tmp$inflPoint$x, digits=3 ) ),
+    "Inflection Y"=lapply(models, function(tmp) format(tmp$inflPoint$y, digits=3 ) ),
+    "date (Y-m-d)" = format(Sys.Date(), "%Y-%m-%d") ,
+    "drda version" = sprintf("%s (%s)",drdav, drdaDate),
+    "R version" = gsub("R version ", "", rv)
+    
+  )
+  
+  rownames(out) <- sprintf("model-%s", seq_len(length(rownames(out))))
+  out <- as.data.frame(t(out))
+
+  out  
 }
 
 
@@ -372,7 +439,11 @@ buildNplrSummary <- function(models){
 
 
 buildSummary <- function(models, lib = 'nplr'){
-  buildNplrSummary(models)
+  if( lib == 'nplr' ){
+    buildNplrSummary(models)
+  }else if( lib == 'drda' ){
+    buildDrdaSummary(models)    
+  }
   
 
 }
