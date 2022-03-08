@@ -37,16 +37,21 @@ as.drda.obj <- function(m_, tmp, isLog = FALSE, mfunc='NA', cell='CELL'){
   # Calculate IC50 & EC50
 
   
-  idx <- which.min(diff(yCurve))+1
+  idx <- which.max(abs(diff(yCurve)))+1
   inflPoint <- list('x'= xCurve[idx], 'y'= yCurve[idx])
   
   
   infl <- c(FALSE, diff(diff(yCurve)>0)!=0)
   
   # IC50 - an estimate of the dose required to produce 50% of the maximal result
-  ic50 <- list( 'x'=xCurve[ which.max( yCurve / max(yCurve) <= 0.5 ) ],
-                'y'=yCurve[ which.max( yCurve / max(yCurve) <= 0.5 ) ] 
-  )
+  #list( 'x'=xCurve[ which.max( yCurve / max(yCurve) <= 0.5 ) ],
+  #'y'=yCurve[ which.max( yCurve / max(yCurve) <= 0.5 ) ] )
+  
+  # When ν = 1 the parameter ϕ represents the value
+  # at which the function is equal to its midpoint, that is (α + β)/2. In such a case, as a measure
+  # of drug potency, ϕ is also known as the half maximal effective log-concentration or log-EC50
+  ic50 <- coeff['phi']
+  
   
   
   #ic50 <- lapply(models, function(model){
@@ -72,7 +77,7 @@ as.drda.obj <- function(m_, tmp, isLog = FALSE, mfunc='NA', cell='CELL'){
     npar=mfunc,
     n = m_$n,
     converged = m_$converged,
-    #auc = nauc(m_),
+    auc = nauc(m_),
     xCurve=xCurve,
     yCurve=yCurve,
     inflPoint=inflPoint,
@@ -363,6 +368,7 @@ buildDrdaSummary <- function(models){
     "AUC"=lapply(models, function(tmp) format(tmp$auc, digits=3 ) ),
     "Inflection X"=lapply(models, function(tmp) format(tmp$inflPoint$x, digits=3 ) ),
     "Inflection Y"=lapply(models, function(tmp) format(tmp$inflPoint$y, digits=3 ) ),
+    "LogIC50"=lapply(models, function(tmp) format(tmp$ic50, digits=3 ) ),
     "date (Y-m-d)" = format(Sys.Date(), "%Y-%m-%d") ,
     "drda version" = sprintf("%s (%s)",drdav, drdaDate),
     "R version" = gsub("R version ", "", rv)
@@ -371,7 +377,7 @@ buildDrdaSummary <- function(models){
   
   rownames(out) <- sprintf("model-%s", seq_len(length(rownames(out))))
   out <- as.data.frame(t(out))
-
+  out <- cbind("Field"=names(as.data.frame(t(out))), out)
   out  
 }
 
@@ -434,6 +440,7 @@ buildNplrSummary <- function(models){
   
   rownames(out) <- sprintf("model-%s", seq_len(length(rownames(out))))
   out <- as.data.frame(t(out))
+  out <- cbind("Field"=names(as.data.frame(t(out))), out)
   out
 }
 

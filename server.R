@@ -21,7 +21,7 @@ source("helpers.R")
 
 # http://127.0.0.1:5402/admin/w/22ae949dc1a3dd3daf96768225009600/ds/d72f5099-6ecf-4944-8f33-99d0ef0e8909
 # options('tercen.workflowId' = '22ae949dc1a3dd3daf96768225009600')
-#options('tercen.stepId' = 'd72f5099-6ecf-4944-8f33-99d0ef0e8909')
+# options('tercen.stepId' = 'd72f5099-6ecf-4944-8f33-99d0ef0e8909')
 
 
 getData <- function(session){
@@ -91,25 +91,39 @@ shinyServer(function(input, output, session) {
         }
       }else if(input$lib == 'drda'){
         
-        #isLog <- !input$toLog
+        isLog <- !input$toLog
         #tmp$lx <- tmp$.x
         #if( !isLog ){
         #  tmp$lx <- log10(tmp$lx)
         #}
         
-        w <- x *0 + 1
-        if(input$weightingd == TRUE){
-          w <- 1 / ( (yOrig)**2  )
-
+        
+        w <- NULL
+        
+        if( input$weightingd != 'none'){
+          # Fit for weight definition
+          mdl <- drda(y ~ x, data = tmp, 
+               mean_function = input$npard,
+               is_log=isLog, max_iter = 200)  
+          if( input$weightingd == 'y_res^2/y_obs^2'){
+            w <- 1 / ( (yOrig)**2  )
+          }else if( input$weightingd == 'y_res^2'){
+            w <- x * 0 + 1
+            #w <- 1 / (
+            #      unlist(as.list(mdl$residuals), use.names = FALSE)^2
+            #  )
+          }
+          
         }
         
+
         cellName <- tmp$cell[[1]]
         return(as.drda.obj(drda(y ~ x, data = tmp, 
                                 mean_function = input$npard,
                                 weights = w,
-                                is_log=TRUE), 
+                                is_log=isLog), 
                            mfunc = input$npard,
-                           tmp, isLog = TRUE, cell=cellName))
+                           tmp, isLog = isLog, cell=cellName))
         
         
       }

@@ -115,7 +115,12 @@ shinyUI(
 			    div(class="row",
 			        div(class="col-xs-12 btn-input",
 			            div(class="col-xs-6 checkboxText", "Weighting"),
-			            div(class="col-xs-6", checkboxInput('weightingd', HTML('<sup>1</sup>&frasl;<sub>y<sup>2</sup></sub>'), FALSE))
+			            div(class="col-xs-6", selectInput( 'weightingd', NULL, c(
+			              'none',
+			              'y_res^2/y_obs^2',
+			              'y_res^2')  ))
+			            #div(class="col-xs-6", checkboxInput('weightingd', HTML('<sup>1</sup>&frasl;<sub>y_obs<sup>2</sup></sub>'), FALSE)),
+			            #div(class="col-xs-6", checkboxInput('weightingd2', HTML('<sup>1</sup>&frasl;<sub>y_res<sup>2</sup></sub>'), FALSE))
 			        )
 			    )
 			  ),
@@ -173,10 +178,11 @@ shinyUI(
 			withTags(div(class="col-sm-12 section-title", h3("Save"))),
 		    withTags(
 		    	div(class="row",
-		    		div(class="col-sm-12", id="saving-subtitle", h4("Filename (without extension)")),
-		    		div(class="col-sm-12", id="fileName", textInput("fname", '', 'myResults')),
+		    		#div(class="col-sm-12", id="saving-subtitle", h4("Filename (without extension)")),
+		    		#div(class="col-sm-12", id="fileName", textInput("fname", '', 'myResults')),
 			    	div(class='col-sm-12',
-			            	div(class='col-sm-6 save-btn', downloadButton("downloadPLot", class="btn-lg btn-success", "Save Plot"))#,
+			            	#div(class='col-sm-6 save-btn', downloadButton("downloadPLot", class="btn-lg btn-success", "Save Plot"))#,
+			    	        div(class='col-sm-6 save-btn', downloadButton("save", class="btn-lg btn-success", "Save"))#,
 			            	#div(class='col-sm-6 save-btn', downloadButton("downloadData", class="btn-lg btn-success", "Save Results"))
 			            )
 		    		)
